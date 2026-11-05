@@ -1,0 +1,21 @@
+# 构建上下文裁剪：镜像里不需要本地环境、依赖和数据目录。
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+tools/
+sample_data/
+docs/
+scripts/
+**/__pycache__
+**/*.py[cod]
+backend/.venv
+backend/tests
+backend/.pytest_cache
+backend/.ruff_cache
+frontend/node_modules
+frontend/dist
+frontend/.env.local
+frontend/.vite
+*.log

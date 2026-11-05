@@ -1,0 +1,73 @@
+# 生产部署：nginx 静态站 + FastAPI + PostgreSQL + Redis
+# 使用方式见 deploy/README.md：
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+
+name: procurebi
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env.prod 中设置 POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-bi}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bi} -d ${POSTGRES_DB:-bi}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.backend
+      args:
+        # 国内服务器可在 .env.prod 中设置 PIP_INDEX_URL 指向 PyPI 镜像。
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+    env_file:
+      - .env.prod
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bi}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-bi}
+      REDIS_URL: redis://redis:6379/0
+      # 只信任 nginx 写入的 X-Forwarded-For，审计日志才能记录真实 IP。
+      TRUST_PROXY_HEADERS: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.web
+      args:
+        VITE_USE_MOCK: "false"
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

@@ -1,0 +1,29 @@
+FROM python:3.12-slim
+
+# 国内服务器构建时可通过 build arg 指定 PyPI 镜像，默认使用官方源。
+ARG PIP_INDEX_URL=https://pypi.org/simple
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# 从 pyproject.toml 安装依赖，避免维护第二份依赖清单。
+COPY backend/pyproject.toml /tmp/pyproject.toml
+RUN python -c "import pathlib, tomllib; d = tomllib.loads(pathlib.Path('/tmp/pyproject.toml').read_text('utf-8'))['project']['dependencies']; pathlib.Path('/tmp/requirements.txt').write_text('\n'.join(d) + '\n', encoding='utf-8')" \
+    && pip install --index-url "${PIP_INDEX_URL}" -r /tmp/requirements.txt
+
+COPY backend/alembic.ini /app/alembic.ini
+COPY backend/migrations /app/migrations
+COPY backend/app /app/app
+
+RUN useradd --create-home --uid 10001 appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+# 每次启动先迁移到最新版本，再启动服务。
+CMD ["sh", "-c", "python -m alembic upgrade head && exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"]

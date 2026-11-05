@@ -1,0 +1,45 @@
+# 环境变量与密钥
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# 运行时数据
+uploads/
+*.log
+
+# 本地便携工具（数据库二进制、下载包、数据目录）
+tools/
+
+# 本项目新增：本地数据库数据目录与下载包
+.pgdata/
+*.zip
+*.tar.gz
+*.dump
+*.sql.bak
+
+# IDE / 系统
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# 浏览器 E2E 截图（临时产物）
+frontend/browser_e2e_*.png
+frontend/*.png

@@ -1,0 +1,11 @@
+# 统一使用 LF，避免在 Windows 上提交后 shell 脚本 / Dockerfile 带 CRLF 导致容器内执行失败
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.xls binary
